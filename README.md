@@ -1,0 +1,2 @@
+# stamps
+Stamp Collector Simulator
