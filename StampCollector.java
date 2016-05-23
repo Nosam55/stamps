@@ -18,6 +18,7 @@ public class StampCollector{
 	private Updater updater;
 	private final Object LOCK = new Object();
 	private boolean isChanged = false;
+	private GUIUpdater guiUpdater;
 	
 	public static void main(String[] args){
 		new StampCollector();
@@ -27,10 +28,10 @@ public class StampCollector{
 		totalStamps = 10l;
 		earners = new ArrayList<StampEarner>();
 		
-		earners.add(new StampEarner(1,2d,10));
-		earners.add(new StampEarner(5,1.75d,50));
-		earners.add(new StampEarner(10,1.5d,100));
-		earners.add(new StampEarner(15,1.5d,150));
+		earners.add(new StampEarner(1,2d,10,0.25d));
+		earners.add(new StampEarner(5,1.75d,50,0.5d));
+		earners.add(new StampEarner(10,1.5d,100,1.0d));
+		earners.add(new StampEarner(15,1.5d,150, 2.0d));
 		
 		for(StampEarner e : earners){
 			e.setGame(this);
@@ -39,12 +40,13 @@ public class StampCollector{
 		
 		gui = new StampGUI(earners);
 		updater = new Updater(earners, this, gui);
-		updater.start();
+		guiUpdater = new GUIUpdater(this, gui);
+		guiUpdater.start();
 	}
-	protected void setStamps(long x){
+	protected synchronized void setStamps(long x){
 		totalStamps = x;
 	}
-	public long getTotal(){
+	public synchronized long getTotal(){
 		return totalStamps;
 	}
 	public Object getLock(){
@@ -58,5 +60,23 @@ public class StampCollector{
 	}
 	public boolean isChanged(){
 		return isChanged;
+	}
+	private class GUIUpdater extends Thread{
+		private StampGUI gui;
+		private StampCollector game;
+		public GUIUpdater(StampCollector c, StampGUI g){
+			gui = g;
+			game = c;
+		}
+		public void run(){
+			while(true){
+				long total = game.getTotal();
+				String str = Long.toString(total);
+				if(!gui.getStampLabel().getText().equals(str)){
+					gui.setStamps(str);
+				}
+			}
+			
+		}
 	}
 }

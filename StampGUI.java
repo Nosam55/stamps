@@ -34,6 +34,9 @@ public class StampGUI {
     public JLabel getStampLabel(){
     	return totalStamps;
     }
+    public synchronized void setStamps(String s){
+    	totalStamps.setText(s);
+    }
     public void redraw(){
     	Graphics g = frame.getGraphics();
     	frame.update(g);

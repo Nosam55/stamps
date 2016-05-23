@@ -5,7 +5,7 @@ import java.awt.event.*;
 
 class StampEarner extends JPanel implements ActionListener{
 	private Image image;
-	private int stampsEarned;
+	private long stampsEarned;
 	private double upgradeRatio;
 	private int upgradeCost;
 	private JButton upgrade;
@@ -13,12 +13,16 @@ class StampEarner extends JPanel implements ActionListener{
 	private StampCollector game;
 	private boolean isBought;
 	private JPanel PLACEHOLDER;
+	private double time;
+
+	private final Object LOCK = new Object();
 	
-	public StampEarner(int x, double y, int u){
+	public StampEarner(int x, double y, int u, double t){
 		super(new GridLayout(1,3));
 		stampsEarned = x;
 		upgradeRatio = y;
 		upgradeCost = u;
+		time = t;
 		isBought = false;
 		image = new ImageIcon("../stamp.png").getImage();
 		PLACEHOLDER = new JPanel();		// TODO: Create a loading bar graphic
@@ -31,6 +35,7 @@ class StampEarner extends JPanel implements ActionListener{
 	
 		
 	}
+	
 	private void buildBought(){
 		this.removeAll();
 		this.setLayout(new GridLayout(1,3));
@@ -40,6 +45,10 @@ class StampEarner extends JPanel implements ActionListener{
 		this.add(new ImagePanel(image));
 		this.setSize(300, image.getHeight(this));
 		game.update();
+		
+	}
+	public void update(){
+		game.setStamps(game.getTotal() + stampsEarned);
 	}
 	private void buildForSale(){
 		this.removeAll();
@@ -50,40 +59,46 @@ class StampEarner extends JPanel implements ActionListener{
 	public void setGame(StampCollector g){
 		game = g;
 	}
-
+	
 	public boolean isBought(){
 		return isBought;
 	}
-	
+	public void getTime(){
+		
+	}
 	public void actionPerformed(ActionEvent e){
 		if(e.getSource() == upgrade){
-			synchronized(game.getLock()){
-				long total = game.getTotal();
-				if(total >= upgradeCost){
+			long total = game.getTotal();
+			if(total >= upgradeCost){
+				
+				synchronized(this){
 					stampsEarned = (int) (stampsEarned * upgradeRatio);
-					game.setStamps(game.getTotal() - upgradeCost);
-					upgradeCost = (int) (upgradeCost * upgradeRatio);
-					upgrade.setText("Upgrade " + upgradeCost);
-					
 				}
+			
+				game.setStamps(game.getTotal() - upgradeCost);
+				upgradeCost = (int) (upgradeCost * upgradeRatio);
+				upgrade.setText("Upgrade " + upgradeCost);
 			}
+			
 		}
 		else if(e.getSource() == buy){
-			synchronized(game.getLock()){
-				long total = game.getTotal();
-				if(total >= upgradeCost){
-					game.setStamps(total - upgradeCost);
-					isBought = true;
-					buildBought();
-				}
+			
+			long total = game.getTotal();
+			if(total >= upgradeCost){
+				game.setStamps(total - upgradeCost);
+				isBought = true;
+				buildBought();
+				
 			}
+			
 		}
 		
 		
 		
 		
 	}
-	public int getStamps(){
+
+	public synchronized long getStamps(){
 		return stampsEarned;
 	}
 	
