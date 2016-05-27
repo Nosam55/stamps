@@ -1,35 +1,32 @@
 import java.util.*;
-class Updater extends Thread{
-	private List<StampEarner> earners;
+class Updater{
+	private List<Updatable> updatables;
 	private long total;
 	private StampCollector game; 
 	private StampGUI gui;
-	public Updater(List<StampEarner> list, StampCollector c, StampGUI g){
-		earners = list;
+	public Updater(List<Updatable> list, StampCollector c, StampGUI g){
+		updatables = list;
 		total = 10l;
 		game = c;
 		gui = g;
 	}
-	
-	public void update(){
-		total = game.getTotal();
-		for(StampEarner e : earners){
-			if(e.isBought())
-				total += (long)e.getStamps();
+
+	public void start(){
+		for(Updatable e : updatables){
+			new TinyUpdater(e).start();
 		}
-		synchronized(game.getLock()){
-			game.setStamps(total);
-			System.out.println(total);
-		}
-		gui.getStampLabel().setText(Long.toString(total));
 	}
-	public void run(){
-		while(true){
-			long time = System.nanoTime();
-			while(System.nanoTime() - time < 1000000000){
-				
+	private class TinyUpdater extends Thread{
+		private Updatable updatable;
+		public TinyUpdater(Updatable u){
+			updatable = u;
+		}
+		public void run(){
+			while(true){
+				updatable.update();
 			}
-			update();
+
+
 		}
 	}
 }

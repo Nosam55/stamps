@@ -2,44 +2,53 @@ import java.awt.image.BufferedImage;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.*;
 
-class StampEarner extends JPanel implements ActionListener{
+class StampEarner extends JPanel implements ActionListener, Updatable, Savable{
 	private Image image;
-	private int stampsEarned;
+	private long stampsEarned;
 	private double upgradeRatio;
-	private int upgradeCost;
+	private long upgradeCost;
 	private JButton upgrade;
 	private JButton buy;
 	private StampCollector game;
 	private boolean isBought;
-	private JPanel PLACEHOLDER;
-	
-	public StampEarner(int x, double y, int u){
+	public static int lines;
+	private long time;
+	private LoadingBar loadingBar;
+
+	public StampEarner(long s, double r, long u, long t, boolean b){
 		super(new GridLayout(1,3));
-		stampsEarned = x;
-		upgradeRatio = y;
+		stampsEarned = s;
+		upgradeRatio = r;
 		upgradeCost = u;
-		isBought = false;
-		image = new ImageIcon("../stamp.png").getImage();
-		PLACEHOLDER = new JPanel();		// TODO: Create a loading bar graphic
+		time = t;
+		isBought = b;
+		image = new ImageIcon("stamp.png").getImage();
+		loadingBar = new LoadingBar(new ImageIcon("loading.png").getImage());
 		upgrade = new JButton("Upgrade "+ upgradeCost);
 		buy = new JButton("Buy " + upgradeCost);
-		buildForSale();
-		
-		
-		
-	
-		
+		loadingBar.scale(160,20);
+		loadingBar.setAnimation(t);
+		if(isBought)
+			buildBought();
+		else
+			buildForSale();
+
+
+
+
+
 	}
 	private void buildBought(){
 		this.removeAll();
 		this.setLayout(new GridLayout(1,3));
 		upgrade.addActionListener(this);
 		this.add(upgrade);
-		this.add(PLACEHOLDER);
+		this.add(loadingBar);
 		this.add(new ImagePanel(image));
 		this.setSize(300, image.getHeight(this));
-		game.update();
+		this.revalidate();
 	}
 	private void buildForSale(){
 		this.removeAll();
@@ -50,41 +59,76 @@ class StampEarner extends JPanel implements ActionListener{
 	public void setGame(StampCollector g){
 		game = g;
 	}
-
-	public boolean isBought(){
+	
+	public synchronized boolean isBought(){
 		return isBought;
 	}
-	
+
+	public synchronized void addStamps(){
+		game.setStamps(game.getTotal() + stampsEarned);
+	}
 	public void actionPerformed(ActionEvent e){
 		if(e.getSource() == upgrade){
-			synchronized(game.getLock()){
-				long total = game.getTotal();
-				if(total >= upgradeCost){
-					stampsEarned = (int) (stampsEarned * upgradeRatio);
-					game.setStamps(game.getTotal() - upgradeCost);
+
+			long total = game.getTotal();
+			if(total >= upgradeCost){
+				game.setStamps(game.getTotal() - upgradeCost);
+				synchronized(this){
+					stampsEarned = (long) (stampsEarned * upgradeRatio);
 					upgradeCost = (int) (upgradeCost * upgradeRatio);
-					upgrade.setText("Upgrade " + upgradeCost);
-					
 				}
+				upgrade.setText("Upgrade " + upgradeCost);
+
 			}
+
 		}
 		else if(e.getSource() == buy){
-			synchronized(game.getLock()){
-				long total = game.getTotal();
-				if(total >= upgradeCost){
-					game.setStamps(total - upgradeCost);
+			long total = game.getTotal();
+			if(total >= upgradeCost){
+				game.setStamps(total - upgradeCost);
+				synchronized(this){
 					isBought = true;
-					buildBought();
 				}
+				
+				buildBought();
 			}
 		}
-		
-		
-		
-		
+
+
+
+	
 	}
-	public int getStamps(){
+	public void update(){
+		if(isBought()){
+			loadingBar.playAnimation();
+			this.addStamps();
+		}
+	}
+	public String[] save(){
+		java.util.List<String> info = new ArrayList<String>();
+		info.add("Earner");
+		synchronized(this){
+			info.add(Boolean.toString(isBought));
+			info.add(Long.toString(upgradeCost));
+			info.add(Double.toString(upgradeRatio));
+			info.add(Long.toString(stampsEarned));
+			info.add(Long.toString(time));
+		}
+		String[] infoArray = new String[info.size()];
+		lines = info.size();
+		infoArray = info.toArray(infoArray);
+		return infoArray;
+	}
+	public static int lines(){
+		return lines;
+	}
+	
+	public LoadingBar getLoadingBar(){
+		return loadingBar;
+	}
+	public synchronized long getStamps(){
 		return stampsEarned;
 	}
 	
+
 }
