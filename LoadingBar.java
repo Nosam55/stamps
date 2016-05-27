@@ -1,6 +1,6 @@
 /*
  * author: Mason McCully
- * date: 22/5/16
+ * date: 23/5/16
  * For my AP Computer Science final project
  */
 import javax.swing.*;
